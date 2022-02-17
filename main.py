@@ -22,7 +22,11 @@ def run():
     parser.add_argument('--service_account_email', required=True, help='Run job with service account credentials')
     parser.add_argument('--network', required=True, help='Specify Google Network to run workers')
     parser.add_argument('--subnetwork', required=True, help='Specify Google subnetwork to run workers')
-    #parser.add_argument('--db-url', required=True, dest='db_url')
+    parser.add_argument('--db-url', required=True, dest='db_url')
+    parser.add_argument('--template_location', required=True, dest='Specify Google Storage bucket in which to save template')
+    parser.add_argument('--setup_file', required=True, dest='Specify setup')
+    parser.add_argument('--sdk_container_image', required=True, dest='Specify setup')
+    parser.add_argument('--experiment', required=True, dest='Specify setup')
 
     opts = parser.parse_args()
 
@@ -31,7 +35,6 @@ def run():
     options.view_as(GoogleCloudOptions).project = opts.project
     options.view_as(GoogleCloudOptions).region = opts.region
     options.view_as(GoogleCloudOptions).staging_location = opts.staging_location
-    options.view_as(GoogleCloudOptions).temp_location = opts.temp_location
     options.view_as(GoogleCloudOptions).temp_location = opts.temp_location
     options.view_as(GoogleCloudOptions).service_account_email = opts.service_account_email
     options.view_as(GoogleCloudOptions).job_name = '{0}{1}'.format('hsm-pipeline-',time.time_ns())

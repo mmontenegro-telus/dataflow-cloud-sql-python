@@ -2,7 +2,8 @@
 
 CURRENT_DIR := $(shell basename $(CURDIR))
 
-DOCKER_IMAGE = gcr.io/${GCP_PROJECT_ID}/pipeline-${CURRENT_DIR}:latest
+#DOCKER_IMAGE = gcr.io/${GCP_PROJECT_ID}/hsm-pipeline:latest
+DOCKER_IMAGE = gcr.io/cio-custcntrct-d2c-np-5e35b7/pipeline-dataflow-cloud-sql-python
 
 ifneq (,$(wildcard ./.env))
     include .env
@@ -31,10 +32,14 @@ deploy: ## Deploy pipeline template to Cloud Storage bucket
 		--runner DataflowRunner \
 		--project ${GCP_PROJECT_ID} \
 		--region ${GCP_REGION} \
-		--temp_location gs://${GCP_BUCKET_NAME}/temp \
-		--template_location gs://${GCP_BUCKET_NAME}/templates/${CURRENT_DIR} \
+		--input_path gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/MariaTestCSV.csv \
+		--temp_location gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/tmp \
+		--staging_location gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/staging/ \
+		--service_account_email=d2c-dataflow-serv-acc@cio-custcntrct-d2c-np-5e35b7.iam.gserviceaccount.com \
+		--subnetwork https://www.googleapis.com/compute/v1/projects/bto-vpc-host-6296f13b/regions/northamerica-northeast1/subnetworks/cio-custcntrct-d2c-dataflow \
+		--network projects/bto-vpc-host-6296f13b/global/networks/bto-vpc-host-network \
+		--template_location gs://cio-custcntrct-d2c-np-5e35b7-storage1/templates/test1 \
+		--setup_file ./setup.py \
 		--experiment=use_runner_v2 \
 		--sdk_container_image=${DOCKER_IMAGE} \
-		--service-account-file ${GCP_SERVICE_ACCOUNT_FILE} \
-		--setup_file ./setup.py \
 		--db-url ${DB_URL}
