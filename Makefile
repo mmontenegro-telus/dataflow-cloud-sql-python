@@ -43,3 +43,15 @@ deploy: ## Deploy pipeline template to Cloud Storage bucket
 		--experiment=use_runner_v2 \
 		--sdk_container_image=${DOCKER_IMAGE} \
 		--db-url ${DB_URL}
+
+deploy-local: ## Deploy pipeline template to Cloud Storage bucket
+	@ python main.py \
+		--runner DirectRunner \
+		--project ${GCP_PROJECT_ID} \
+		--region ${GCP_REGION} \
+		--input_path gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/MariaTestCSV.csv \
+		--temp_location gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/tmp \
+		--staging_location gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/staging/ \
+		--service_account_email=d2c-dataflow-serv-acc@cio-custcntrct-d2c-np-5e35b7.iam.gserviceaccount.com \
+		--subnetwork https://www.googleapis.com/compute/v1/projects/bto-vpc-host-6296f13b/regions/northamerica-northeast1/subnetworks/cio-custcntrct-d2c-dataflow \
+		--network projects/bto-vpc-host-6296f13b/global/networks/bto-vpc-host-network

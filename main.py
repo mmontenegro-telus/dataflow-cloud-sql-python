@@ -5,7 +5,7 @@ import logging
 import argparse
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, GoogleCloudOptions, StandardOptions
-from transformations.db import ReadFromDBFn
+#from transformations.db import ReadFromDBFn
 
 logging.getLogger().setLevel(logging.INFO)
 logging.info("Building pipeline ...")
@@ -22,11 +22,11 @@ def run():
     parser.add_argument('--service_account_email', required=True, help='Run job with service account credentials')
     parser.add_argument('--network', required=True, help='Specify Google Network to run workers')
     parser.add_argument('--subnetwork', required=True, help='Specify Google subnetwork to run workers')
-    parser.add_argument('--db-url', required=True, dest='db_url')
+    parser.add_argument('--db-url', required=False, dest='db_url')
     parser.add_argument('--template_location', required=False, dest='Specify Google Storage bucket in which to save template')
-    parser.add_argument('--setup_file', required=True, dest='Specify setup')
-    parser.add_argument('--sdk_container_image', required=True, dest='Specify setup')
-    parser.add_argument('--experiment', required=True, dest='Specify setup')
+    parser.add_argument('--setup_file', required=False, dest='Specify setup')
+    parser.add_argument('--sdk_container_image', required=False, dest='Specify setup')
+    parser.add_argument('--experiment', required=False, dest='Specify setup')
 
     opts = parser.parse_args()
 
