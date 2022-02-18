@@ -37,7 +37,7 @@ class RowReader(beam.DoFn):
             'modified_by': 'APP_HSM_ETL'
         }
 
-def preprocess_text(row):
+def process_products(row):
     cols_to_parse=['available_technology_type','current_technology_type','product_availability','existing_product']
     pattern = re.compile(r";|,")
     row_copy = row.copy()
@@ -45,8 +45,11 @@ def preprocess_text(row):
         line = row_copy[x]
         if line:
             line = line.replace(r'"', "")
-            line = pattern.split(line)
-            row_copy[x] = line
+            products = pattern.split(line)
+            productJson = {}
+            for y in products:
+                productJson[y] = 1
+            row_copy[x] = productJson
     return row_copy
         
 def run():
@@ -105,15 +108,18 @@ def run():
     with beam.Pipeline(options=options) as pipeline:
         beam_df = pipeline | 'Read CSV' >> read_csv(input_path, names=column_names, skip_blank_lines=True, parse_dates=["modified_at"])
         (
-            # Convert the Beam DataFrame to a PCollection.
             convert.to_pcollection(beam_df)
-            # Convert collection to dictionary
-            | 'To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
-            | 'Convert string columns to arrays' >> beam.Map(lambda x: preprocess_text(x))
-            # Print the elements in the PCollection.
+            | 'Convert collection to dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
+            | 'Convert string columns into arrays' >> beam.Map(lambda x: process_products(x))
+            # Insert into database
             | 'Print' >> beam.Map(print)
         )
 
 
 if __name__ == '__main__':
     run()
+
+#Falta:
+#   depende de columna Action manejar el update a la base de datos
+#   cambiar modified by?
+#   
