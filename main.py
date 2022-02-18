@@ -3,6 +3,7 @@ import os
 import time
 import logging
 import argparse
+import re
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, GoogleCloudOptions, StandardOptions
 from apache_beam.dataframe.io import read_csv
@@ -15,9 +16,10 @@ logging.info("Building pipeline ...")
 
 
 class RowReader(beam.DoFn):
+
     def process(self, row):
         yield {
-            'address_id': str(row[0]),
+            'address_id': row["address_id"],
             'available_technology_type': str(row[1]),
             'current_technology_type': str(row[2]),
             'product_availability': str(row[3]),
@@ -33,8 +35,20 @@ class RowReader(beam.DoFn):
             'action': str(row[13]),
             'modified_at': str(row[14]),
             'modified_by': 'APP_HSM_ETL'
-        } 
+        }
 
+def preprocess_text(row):
+    cols_to_parse=['available_technology_type','current_technology_type','product_availability','existing_product']
+    pattern = re.compile(r";|,")
+    row_copy = row.copy()
+    for x in cols_to_parse:
+        line = row_copy[x]
+        if line:
+            line = line.replace(r'"', "")
+            line = pattern.split(line)
+            row_copy[x] = line
+    return row_copy
+        
 def run():
     # Command line arguments
     parser = argparse.ArgumentParser(description='Load from CSV into CloudSQL')
@@ -89,12 +103,13 @@ def run():
     # Create the pipeline
     options.view_as(SetupOptions).save_main_session = True
     with beam.Pipeline(options=options) as pipeline:
-        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, names=column_names)
+        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, names=column_names, skip_blank_lines=True, parse_dates=["modified_at"])
         (
             # Convert the Beam DataFrame to a PCollection.
             convert.to_pcollection(beam_df)
             # Convert collection to dictionary
             | 'To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
+            | 'Convert string columns to arrays' >> beam.Map(lambda x: preprocess_text(x))
             # Print the elements in the PCollection.
             | 'Print' >> beam.Map(print)
         )
