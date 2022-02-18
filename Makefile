@@ -3,7 +3,7 @@
 CURRENT_DIR := $(shell basename $(CURDIR))
 
 #DOCKER_IMAGE = gcr.io/${GCP_PROJECT_ID}/hsm-pipeline:latest
-DOCKER_IMAGE = gcr.io/cio-custcntrct-d2c-np-5e35b7/pipeline-dataflow-cloud-sql-python
+DOCKER_IMAGE = gcr.io/cio-custcntrct-d2c-np-5e35b7/pipeline-dataflow-cloud-sql-python:latest
 
 ifneq (,$(wildcard ./.env))
     include .env
