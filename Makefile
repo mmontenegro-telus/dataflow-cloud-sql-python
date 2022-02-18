@@ -19,6 +19,7 @@ install-dependencies: ## Install dependencies
 	@ pip install pg8000
 	@ pip install psycopg2
 	@ pip install sqlalchemy
+	@ pip install pandas
 
 docker-push: ## Push Dataflow docker container image to GCP
 	docker build --tag ${DOCKER_IMAGE} \
@@ -44,7 +45,7 @@ deploy: ## Deploy pipeline template to Cloud Storage bucket
 		--sdk_container_image=${DOCKER_IMAGE} \
 		--db-url ${DB_URL}
 
-deploy-local: ## Deploy pipeline template to Cloud Storage bucket
+run-local: ## Deploy pipeline template to Cloud Storage bucket
 	@ python main.py \
 		--runner DirectRunner \
 		--project ${GCP_PROJECT_ID} \

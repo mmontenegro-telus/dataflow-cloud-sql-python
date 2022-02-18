@@ -5,10 +5,34 @@ import logging
 import argparse
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, GoogleCloudOptions, StandardOptions
+from apache_beam.dataframe.io import read_csv
+from apache_beam.dataframe.convert import to_pcollection
 #from transformations.db import ReadFromDBFn
 
 logging.getLogger().setLevel(logging.INFO)
 logging.info("Building pipeline ...")
+
+
+class RowReader(beam.DoFn):
+    def process(self, row):
+        yield {
+            'address_id': str(row[0]),
+            'available_technology_type': str(row[1]),
+            'current_technology_type': str(row[2]),
+            'product_availability': str(row[3]),
+            'hsicDownspeed': row[4] and int(row[4]),
+            'existing_product':str(row[5]),
+            'contract_status': str(row[6]),
+            'ltCurrentValue': str(row[7]),
+            'ltPotentialValue': str(row[8]),
+            'drop_status': str(row[9]),
+            'copper_port_availability': str(row[10]),
+            'demographics': str(row[11]),
+            'first_nations': eval(str(row[12])),
+            'action': str(row[13]),
+            'modified_at': str(row[14]),
+            'modified_by': 'APP_HSM_ETL'
+        } 
 
 def run():
     # Command line arguments
@@ -47,12 +71,16 @@ def run():
     # Create the pipeline
     options.view_as(SetupOptions).save_main_session = True
     with beam.Pipeline(options=options) as p:
-        rows = (
+        df = (
             p
-            | "Initialize" >> beam.Create([{}])
-            | 'ReadFromGCS' >> beam.io.ReadFromText(input_path)
-            | 'SplitValues' >> beam.Map(lambda x:x.split(","))
+            | read_csv(input_path, header=0)
         )
+        pc = to_pcollection(df)
+        _ = (
+                pc
+                | 'Decode from CSV' >> beam.ParDo(RowReader())
+                | 'Print'       >> beam.Map(print)
+            )
 
 
 if __name__ == '__main__':
