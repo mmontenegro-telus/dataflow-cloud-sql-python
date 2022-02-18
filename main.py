@@ -7,8 +7,8 @@ import re
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, GoogleCloudOptions, StandardOptions
 from apache_beam.dataframe.io import read_csv
-from apache_beam.dataframe.convert import to_pcollection
 from apache_beam.dataframe import convert
+from datetime import datetime
 #from transformations.db import ReadFromDBFn
 
 logging.getLogger().setLevel(logging.INFO)
@@ -106,13 +106,14 @@ def run():
     # Create the pipeline
     options.view_as(SetupOptions).save_main_session = True
     with beam.Pipeline(options=options) as pipeline:
-        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, names=column_names, skip_blank_lines=True, parse_dates=["modified_at"])
+        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, skiprows=1, names=column_names, skip_blank_lines=True, parse_dates=["modified_at"])
         (
             convert.to_pcollection(beam_df)
             | 'Convert collection to dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
             | 'Convert string columns into arrays' >> beam.Map(lambda x: process_products(x))
             # Insert into database
-            | 'Print' >> beam.Map(print)
+            #| 'Print' >> beam.Map(print)
+            | 'Write to file' >> beam.io.WriteToText(f"gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/result_{datetime.now()}.txt")
         )
 
 
