@@ -23,7 +23,7 @@ def run():
     parser.add_argument('--network', required=True, help='Specify Google Network to run workers')
     parser.add_argument('--subnetwork', required=True, help='Specify Google subnetwork to run workers')
     parser.add_argument('--db-url', required=True, dest='db_url')
-    parser.add_argument('--template_location', required=True, dest='Specify Google Storage bucket in which to save template')
+    parser.add_argument('--template_location', required=False, dest='Specify Google Storage bucket in which to save template')
     parser.add_argument('--setup_file', required=True, dest='Specify setup')
     parser.add_argument('--sdk_container_image', required=True, dest='Specify setup')
     parser.add_argument('--experiment', required=True, dest='Specify setup')

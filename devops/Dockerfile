@@ -1,4 +1,4 @@
-FROM apache/beam_python3.8_sdk:2.33.0
+FROM apache/beam_python3.8_sdk:2.36.0
 
 RUN apt-get -y update
 RUN apt-get -y install postgresql-client
