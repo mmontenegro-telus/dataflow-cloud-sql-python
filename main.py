@@ -7,6 +7,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, GoogleCloudOptions, StandardOptions
 from apache_beam.dataframe.io import read_csv
 from apache_beam.dataframe.convert import to_pcollection
+from apache_beam.dataframe import convert
 #from transformations.db import ReadFromDBFn
 
 logging.getLogger().setLevel(logging.INFO)
@@ -67,20 +68,36 @@ def run():
     # Static input and output
     #input = 'gs://{0}/MariaTestCSV.csv'.format(opts.project)
     input_path = opts.input_path
+    column_names = [
+        "address_id",
+        "available_technology_type",
+        "current_technology_type",
+        "product_availability",
+        "hsicDownspeed",
+        "existing_product",
+        "contract_status",
+        "lt_current_value",
+        "lt_potential_value",
+        "drop_status",
+        "copper_port_availability",
+        "demographics",
+        "first_nations",
+        "action",
+        "modified_at"
+    ]
 
     # Create the pipeline
     options.view_as(SetupOptions).save_main_session = True
-    with beam.Pipeline(options=options) as p:
-        df = (
-            p
-            | read_csv(input_path, header=0)
+    with beam.Pipeline(options=options) as pipeline:
+        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, names=column_names)
+        (
+            # Convert the Beam DataFrame to a PCollection.
+            convert.to_pcollection(beam_df)
+            # Convert collection to dictionary
+            | 'To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
+            # Print the elements in the PCollection.
+            | 'Print' >> beam.Map(print)
         )
-        pc = to_pcollection(df)
-        _ = (
-                pc
-                | 'Decode from CSV' >> beam.ParDo(RowReader())
-                | 'Print'       >> beam.Map(print)
-            )
 
 
 if __name__ == '__main__':
