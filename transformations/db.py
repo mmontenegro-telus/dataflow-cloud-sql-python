@@ -1,9 +1,7 @@
 from __future__ import division, print_function
-
 import apache_beam as beam
-
 import apache_beam as beam
-
+import logging
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
@@ -37,11 +35,14 @@ class WriteIntoDB(beam.PTransform):
         self.update_ignores = update_ignores
 
     def expand(self, pcoll):
-        return pcoll | beam.ParDo(WriteIntoDBFn(
-            url=self.url,
-            table=self.table,
-            update_ignores=self.update_ignores,
-        ))
+        try:
+            return pcoll | beam.ParDo(WriteIntoDBFn(
+                url=self.url,
+                table=self.table,
+                update_ignores=self.update_ignores,
+            ))
+        except Exception as e:
+            logging.exception(e)
 
 class WriteIntoDBFn(beam.DoFn):
     def __init__(self, url, table, update_ignores, *args, **kwargs):
@@ -61,6 +62,7 @@ class WriteIntoDBFn(beam.DoFn):
         self.session = self.SessionClass()
         engine = self.session.bind
         metadata = sqlalchemy.MetaData(bind=engine)
+        logging.DEBUG(metadata)
         self.table = sqlalchemy.Table(self.table, metadata, autoload=True, listeners=[
             ('column_reflect', self.column_reflect_listener)
         ])

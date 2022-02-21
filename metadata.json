@@ -1,6 +1,6 @@
 {
-    "name": "Streaming beam Python flex template",
-    "description": "Streaming beam example for python flex template.",
+    "name": "Batch beam Python flex template",
+    "description": "Batch beam template for D2C HSM integration",
     "parameters": [
       {
         "name": "input_subscription",

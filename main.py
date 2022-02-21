@@ -9,7 +9,7 @@ from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, 
 from apache_beam.dataframe.io import read_csv
 from apache_beam.dataframe import convert
 from datetime import datetime
-#from transformations.db import ReadFromDBFn
+from transformations.db import WriteIntoDB
 
 logging.getLogger().setLevel(logging.INFO)
 logging.info("Building pipeline ...")
@@ -37,20 +37,26 @@ class RowReader(beam.DoFn):
             'modified_by': 'APP_HSM_ETL'
         }
 
+
 def process_products(row):
     cols_to_parse=['available_technology_type','current_technology_type','product_availability','existing_product']
     pattern = re.compile(r";|,")
-    row_copy = row.copy()
-    for x in cols_to_parse:
-        line = row_copy[x]
-        if line:
-            line = line.replace(r'"', "")
-            products = pattern.split(line)
-            productJson = {}
-            for y in products:
-                productJson[y] = 1
-            row_copy[x] = productJson
-    return row_copy
+    try:
+        row_copy = row.copy()
+        row_copy['modified_by'] = 'APP_HSM_ETL'
+        for x in cols_to_parse:
+            line = row_copy[x]
+            if line:
+                line = line.replace(r'"', "")
+                products = pattern.split(line)
+                productJson = {}
+                for y in products:
+                    productJson[y] = 1
+                row_copy[x] = productJson
+        return row_copy
+    except Exception as e:
+        logging.exception(e)
+
         
 def run():
     # Command line arguments
@@ -84,13 +90,14 @@ def run():
 
     # Static input and output
     #input = 'gs://{0}/MariaTestCSV.csv'.format(opts.project)
+    db_url = 'postgresql+pg8000://APP_HSM_ETL:ddeeq3XdZ2aKU9kr@/d2c-d2d-db?unix_sock=%2Fcloudsql%2Fmy%3Ainstance%3Ahere%2F.s.PGSQL.5432'
     input_path = opts.input_path
     column_names = [
         "address_id",
         "available_technology_type",
         "current_technology_type",
         "product_availability",
-        "hsicDownspeed",
+        "internet_speed",
         "existing_product",
         "contract_status",
         "lt_current_value",
@@ -102,18 +109,32 @@ def run():
         "action",
         "modified_at"
     ]
+    used_columns = [
+        "address_id",
+        "available_technology_type",
+        "current_technology_type",
+        "product_availability",
+        "internet_speed",
+        "existing_product",
+        "contract_status",
+        "drop_status",
+        "copper_port_availability",
+        "demographics",
+        "first_nations",
+        "modified_at"
+    ]
 
     # Create the pipeline
     options.view_as(SetupOptions).save_main_session = True
     with beam.Pipeline(options=options) as pipeline:
-        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, skiprows=1, names=column_names, skip_blank_lines=True, parse_dates=["modified_at"])
+        beam_df = pipeline | 'Read CSV' >> read_csv(input_path, skiprows=1, names=column_names, skip_blank_lines=True, usecols=used_columns, parse_dates=["modified_at"])
         (
-            convert.to_pcollection(beam_df)
+            'Convert to PCollection' >> convert.to_pcollection(beam_df)
             | 'Convert collection to dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
-            | 'Convert string columns into arrays' >> beam.Map(lambda x: process_products(x))
-            # Insert into database
-            #| 'Print' >> beam.Map(print)
+            | 'Convert string columns into arrays' >> beam.Map(process_products)
             | 'Write to file' >> beam.io.WriteToText(f"gs://cio-custcntrct-d2c-np-5e35b7-storage1/dataflow/result_{datetime.now()}.txt")
+            #| 'Print' >> beam.Map(print)
+            #| 'Write to table' >> WriteIntoDB(url=db_url, table='address_extension_hsm', update_ignores=False)
         )
 
 
